@@ -1,0 +1,1 @@
+javascript:(()=>{const s=document.createElement('script');s.src='https://mike1simon300.github.io/pocketpad/bridge.js';(document.head||document.documentElement).appendChild(s)})()

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PocketPad Bridge Controller</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#10131a;color:#f4f6fb;font:16px system-ui;touch-action:none}
+main{max-width:650px;margin:auto;padding:18px}h1{margin:4px 0 8px;font-size:25px}.muted{color:#aab3c4;font-size:13px}
+input,button{font:inherit;border:0;border-radius:12px;padding:13px}input{width:100%;background:#252c39;color:white;margin:8px 0}
+button{background:#30394a;color:white;font-weight:700;min-width:58px;min-height:54px;box-shadow:inset 0 -3px #1c2230;touch-action:none;user-select:none}
+button:active,.down{background:#3977c9;transform:translateY(1px)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pad{display:grid;grid-template-columns:repeat(3,68px);grid-template-rows:repeat(3,58px);gap:6px;justify-content:center;margin:24px 0}
+.pad button:nth-child(1){grid-column:2}.pad button:nth-child(2){grid-column:1;grid-row:2}.pad button:nth-child(3){grid-column:2;grid-row:2}.pad button:nth-child(4){grid-column:3;grid-row:2}.pad button:nth-child(5){grid-column:2;grid-row:3}
+.faces{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,58px);gap:6px;justify-content:center}
+.faces button:nth-child(1){grid-column:2;grid-row:1}.faces button:nth-child(2){grid-column:1;grid-row:2}.faces button:nth-child(3){grid-column:3;grid-row:2}.faces button:nth-child(4){grid-column:2;grid-row:3}
+.panel{background:#1a202b;border:1px solid #30394a;border-radius:16px;padding:14px;margin:14px 0}
+.small{font-size:12px;color:#aab3c4}.wide{flex:1}
+</style>
+</head>
+<body><main>
+<h1>🎮 PocketPad Bridge</h1>
+<p class="muted">Experimental browser-input test. It does not emulate a real Bluetooth/Xbox controller.</p>
+<div class="panel">
+  <label for="peerid">Bridge ID shown on the iPad</label>
+  <input id="peerid" autocomplete="off" autocapitalize="off" placeholder="Paste iPad bridge ID">
+  <div class="row"><button id="connect">Connect</button><span id="status" class="muted">Not connected</span></div>
+</div>
+<div class="row" style="justify-content:space-around">
+ <div><div class="small" style="text-align:center;margin-bottom:8px">D-PAD</div>
+  <div class="pad">
+   <button data-key="ArrowUp">▲</button><button data-key="ArrowLeft">◀</button><button data-key="ArrowDown">▼</button><button data-key="ArrowRight">▶</button>
+  </div>
+ </div>
+ <div><div class="small" style="text-align:center;margin-bottom:8px">A / B / X / Y</div>
+  <div class="faces">
+   <button data-key="KeyY">Y</button><button data-key="KeyX">X</button><button data-key="KeyB">B</button><button data-key="Enter">A</button>
+  </div>
+ </div>
+</div>
+<div class="row" style="justify-content:center;margin:16px 0">
+ <button data-key="Escape">BACK</button><button data-key="Space">START</button>
+</div>
+<div class="panel small">Test mapping: A = Enter, B = B, X = X, Y = Y, D-pad = arrow keys, Back = Escape, Start = Space. These are ordinary synthetic browser keyboard events; GeForce NOW may ignore them.</div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>
+let peer=null, conn=null;
+const statusEl=document.getElementById('status');
+function status(s){statusEl.textContent=s}
+document.getElementById('connect').addEventListener('click',()=>{
+ const id=document.getElementById('peerid').value.trim();
+ if(!id){status('Enter the iPad bridge ID');return}
+ if(typeof Peer==='undefined'){status('PeerJS failed to load');return}
+ if(!peer) peer=new Peer();
+ status('Connecting…');
+ conn=peer.connect(id,{reliable:true});
+ conn.on('open',()=>status('Connected ✓'));
+ conn.on('error',e=>status('Connection error: '+e.type));
+ conn.on('close',()=>status('Disconnected'));
+});
+function send(key,down){if(conn&&conn.open)conn.send({kind:'key',key,down})}
+document.querySelectorAll('[data-key]').forEach(btn=>{
+ const key=btn.dataset.key;
+ const down=e=>{e.preventDefault();btn.classList.add('down');send(key,true)};
+ const up=e=>{e.preventDefault();btn.classList.remove('down');send(key,false)};
+ btn.addEventListener('pointerdown',down);
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>btn.addEventListener(ev,up));
+});
+window.addEventListener('pagehide',()=>{document.querySelectorAll('[data-key]').forEach(b=>send(b.dataset.key,false));if(peer)peer.destroy()});
+</script></body></html>
