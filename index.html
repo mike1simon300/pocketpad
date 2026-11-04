@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#10141d">
+<title>PocketPad Prototype</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#10141d;--panel:#1b2230;--edge:#303b4d;--muted:#9aa8ba;--white:#f3f6fb;--green:#54d69a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overscroll-behavior:none}
+body{padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);touch-action:none}
+header{height:54px;display:flex;align-items:center;justify-content:space-between;font-weight:800;letter-spacing:.12em}
+.status{font-size:12px;color:var(--muted);letter-spacing:0;font-weight:600}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e6ad54;margin-right:6px}.dot.on{background:var(--green)}
+main{height:calc(100% - 60px);display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:18px;padding:14px}
+h1{font-size:24px;margin:10px 0}p{color:var(--muted);line-height:1.45}
+input,button{font:inherit}input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--edge);background:#101722;color:white;margin:8px 0}
+button{border:0;color:white;background:#303b4d;border-radius:12px;padding:12px 15px;font-weight:700}
+.primary{background:#277d60}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+.hidden{display:none!important}
+#controller{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:0}
+.topline{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.1em}
+.controls{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1;min-height:0}
+.stickWrap{width:34vw;max-width:190px;aspect-ratio:1;position:relative;touch-action:none}
+.stick{position:absolute;inset:0;border:2px solid #526075;background:#222c3b;border-radius:50%;box-shadow:inset 0 0 0 12px #1a2230}
+.knob{position:absolute;width:43%;height:43%;left:28.5%;top:28.5%;border-radius:50%;background:linear-gradient(145deg,#63748c,#303c50);border:2px solid #8795a8;box-shadow:0 5px 12px #0008;pointer-events:none}
+.side{display:flex;flex-direction:column;align-items:center;gap:9px}
+.dpad{display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:42px 42px 42px;gap:3px}
+.dpad button{padding:0;font-size:19px;border-radius:9px}
+.dpad .empty{visibility:hidden}
+.abxy{width:142px;height:142px;position:relative}
+.abxy button{position:absolute;width:45px;height:45px;border-radius:50%;padding:0;font-weight:900;font-size:17px;box-shadow:0 3px 8px #0008}
+.y{top:0;left:49px;color:#f2cf58}.x{top:49px;left:0;color:#70b9ff}.b{top:49px;right:0;color:#ff7777}.a{bottom:0;left:49px;color:#6be0a0}
+.smallbtn{font-size:11px;padding:9px 14px}
+.triggers{display:flex;gap:10px}.triggers button{flex:1}
+#receiver pre{white-space:pre-wrap;word-break:break-word;color:#c7d2e1;font-size:13px;line-height:1.5}
+.note{font-size:12px;color:var(--muted)}
+@media(orientation:portrait){.controls{flex-wrap:wrap;justify-content:space-around}.stickWrap{width:38vw}.side{padding:6px}}
+</style>
+</head>
+<body>
+<header><span>POCKETPAD</span><span class="status"><i id="dot" class="dot"></i><span id="status">NOT CONNECTED</span></span></header>
+<main>
+<section id="setup" class="card">
+<h1 id="heading">Pair your devices</h1>
+<p id="intro">Open this page on the iPad first and choose Receiver. Then open it on the iPhone and enter the pairing ID shown on the iPad. Both devices need internet access for the initial peer connection.</p>
+<div id="receiverSetup" class="hidden"><button class="primary" id="startReceiver">Start iPad receiver</button><p id="peerId" class="note"></p></div>
+<div id="controllerSetup" class="hidden"><label class="note" for="remoteId">iPad pairing ID</label><input id="remoteId" autocapitalize="none" autocomplete="off" placeholder="Paste ID from iPad"><button class="primary" id="connect">Connect to iPad</button></div>
+</section>
+<section id="controller" class="hidden">
+<div class="topline"><span>LEFT STICK</span><span>RIGHT STICK</span></div>
+<div class="controls">
+<div class="stickWrap" data-stick="left"><div class="stick"></div><div class="knob"></div></div>
+<div class="side">
+<div class="dpad">
+<button class="empty"></button><button data-button="UP">▲</button><button class="empty"></button>
+<button data-button="LEFT">◀</button><button data-button="DPAD_CENTER">●</button><button data-button="RIGHT">▶</button>
+<button class="empty"></button><button data-button="DOWN">▼</button><button class="empty"></button>
+</div>
+</div>
+<div class="side">
+<div class="abxy">
+<button class="y" data-button="Y">Y</button><button class="x" data-button="X">X</button><button class="b" data-button="B">B</button><button class="a" data-button="A">A</button>
+</div>
+</div>
+<div class="stickWrap" data-stick="right"><div class="stick"></div><div class="knob"></div></div>
+</div>
+<div class="triggers"><button data-button="LB">LB</button><button data-button="LT">LT</button><button data-button="BACK" class="smallbtn">BACK</button><button data-button="START" class="smallbtn">START</button><button data-button="RT">RT</button><button data-button="RB">RB</button></div>
+</section>
+<section id="receiver" class="card hidden"><h1>iPad receiver</h1><p>Waiting for iPhone controller…</p><pre id="telemetry">No controller connected.</pre><p class="note">This prototype verifies pairing and input transport. It does not create a system-level gamepad or inject inputs into GeForce NOW.</p></section>
+</main>
+<script>
+const $=s=>document.querySelector(s), params=new URLSearchParams(location.search), mode=params.get('mode');
+const setup=$('#setup'), receiver=$('#receiver'), controller=$('#controller'), statusEl=$('#status'), dot=$('#dot');
+let peer=null, conn=null, latest={lx:0,ly:0,rx:0,ry:0,buttons:[],lt:0,rt:0};
+function status(t,on=false){statusEl.textContent=t;dot.classList.toggle('on',on)}
+function show(id){[setup,receiver,controller].forEach(x=>x.classList.add('hidden'));$(id).classList.remove('hidden')}
+function makePeer(){if(!window.Peer){alert('Could not load the WebRTC library. Check internet access and reload.');return null}return new Peer()}
+if(mode==='receiver'){
+ $('#heading').textContent='iPad receiver';$('#intro').textContent='Create a temporary pairing ID for your iPhone.';
+ $('#receiverSetup').classList.remove('hidden');$('#startReceiver').onclick=()=>{
+  peer=makePeer();if(!peer)return;
+  peer.on('open',id=>{$('#peerId').textContent='Pairing ID: '+id+' — enter this on the iPhone.';status('WAITING',false)});
+  peer.on('connection',c=>{conn=c;conn.on('open',()=>{show('#receiver');status('CONNECTED',true);$('#telemetry').textContent='Connected. Waiting for input…'});
+   conn.on('data',d=>{$('#telemetry').textContent=JSON.stringify(d,null,2)});conn.on('close',()=>status('DISCONNECTED',false));});
+  peer.on('error',e=>status('ERROR: '+e.type,false));
+ };
+}else{
+ $('#heading').textContent='iPhone controller';$('#intro').textContent='Enter the pairing ID displayed by the iPad receiver.';
+ $('#controllerSetup').classList.remove('hidden');
+ $('#connect').onclick=()=>{
+  const id=$('#remoteId').value.trim();if(!id)return alert('Enter the iPad pairing ID first.');
+  peer=makePeer();if(!peer)return;
+  peer.on('open',()=>{conn=peer.connect(id,{reliable:true});conn.on('open',()=>{show('#controller');status('CONNECTED',true);send()});conn.on('close',()=>status('DISCONNECTED',false));});
+  peer.on('error',e=>status('ERROR: '+e.type,false));
+ };
+}
+function send(){if(conn&&conn.open)conn.send({...latest,ts:performance.now()})}
+function setButton(name,down){const s=new Set(latest.buttons);down?s.add(name):s.delete(name);latest.buttons=[...s];send()}
+document.querySelectorAll('[data-button]').forEach(b=>{
+ const n=b.dataset.button;
+ b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);setButton(n,true)});
+ const up=e=>{e.preventDefault();setButton(n,false)};
+ b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',()=>setButton(n,false));
+});
+document.querySelectorAll('[data-stick]').forEach(w=>{
+ const key=w.dataset.stick,knob=w.querySelector('.knob');let active=null;
+ function move(e){const r=w.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,lim=r.width*.34;
+  let dx=e.clientX-cx,dy=e.clientY-cy,d=Math.hypot(dx,dy);if(d>lim){dx*=lim/d;dy*=lim/d}
+  knob.style.transform=`translate(${dx}px,${dy}px)`;latest[key==='left'?'lx':'rx']=Math.max(-1,Math.min(1,dx/lim));latest[key==='left'?'ly':'ry']=Math.max(-1,Math.min(1,-dy/lim));send();
+ }
+ function reset(){active=null;knob.style.transform='';latest[key==='left'?'lx':'rx']=0;latest[key==='left'?'ly':'ry']=0;send()}
+ w.addEventListener('pointerdown',e=>{e.preventDefault();active=e.pointerId;w.setPointerCapture(active);move(e)});
+ w.addEventListener('pointermove',e=>{if(e.pointerId===active)move(e)});
+ w.addEventListener('pointerup',reset);w.addEventListener('pointercancel',reset);
+});
+</script>
+</body>
+</html>
